@@ -1,7 +1,9 @@
+import React from 'react';
 import { ThreeDots } from 'react-loader-spinner';
 import css from './Loader.module.css';
+import { LoaderProps } from './Loader.types';
 
-const Loader = () => {
+const Loader: React.FC<LoaderProps> = () => {
   return (
     <div className={css.loaderWrapper}>
       <ThreeDots

@@ -1,6 +1,6 @@
+import React, { useState, useEffect } from 'react';
 import css from './App.module.css';
 import { Toaster } from 'react-hot-toast';
-import { useState } from 'react';
 import ImageGallery from '../ImageGallery/ImageGallery';
 import FetchPhotos from '../FetchPhotos/FetchPhotos';
 import Loader from '../Loader/Loader';
@@ -8,43 +8,56 @@ import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import SearchBar from '../SearchBar/SearchBar';
 import LoadMoreBtn from '../LoadMoreBtn/LoadMoreBtn';
 import ImageModal from '../ImageModal/ImageModal';
+import { Image, FetchPhotosResult } from './App.types';
 
-const App = () => {
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-  const [page, setPage] = useState(1);
-  const [topic, setTopic] = useState('');
-  const [totalImages, setTotalImages] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+const App: React.FC = () => {
+  const [articles, setArticles] = useState<Image[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
+  const [topic, setTopic] = useState<string>('');
+  const [totalImages, setTotalImages] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
+  const [selectedImage, setSelectedImage] = useState<Image | null>(null);
 
-  const handleSearch = async newTopic => {
+  useEffect(() => {
+    if (!modalIsOpen) {
+      setSelectedImage(null);
+    }
+  }, [modalIsOpen]);
+
+  const handleSearch = async (
+    newTopic: string,
+  ): Promise<{ results: Image[] }> => {
     try {
       setArticles([]);
       setError(false);
       setLoading(true);
       setTopic(newTopic);
       setPage(1);
-      const { results, total } = await FetchPhotos(newTopic, 1);
+      const { results, total }: FetchPhotosResult = await FetchPhotos(
+        newTopic,
+        1,
+      );
       setArticles(results);
       setTotalImages(total);
       setHasMore(results.length < total);
-      return { results, total };
+      return { results };
     } catch (error) {
       console.log(error);
       setError(true);
+      return { results: [] };
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLoadMore = async () => {
+  const handleLoadMore = async (): Promise<void> => {
     try {
       setLoading(true);
       const nextPage = page + 1;
-      const { results } = await FetchPhotos(topic, nextPage);
+      const { results }: FetchPhotosResult = await FetchPhotos(topic, nextPage);
       setArticles(prevArticles => [...prevArticles, ...results]);
       setPage(nextPage);
       setHasMore(articles.length + results.length < totalImages);
@@ -56,13 +69,17 @@ const App = () => {
     }
   };
 
-  const openModal = (imageUrl, alt) => {
-    setSelectedImage({ imageUrl, alt });
+  const openModal = (imageUrl: string, description: string): void => {
+    setSelectedImage({
+      id: '',
+      alt_description: description,
+      urls: { small: '', full: imageUrl },
+      description,
+    });
     setModalIsOpen(true);
   };
 
-  const closeModal = () => {
-    setSelectedImage(null);
+  const closeModal = (): void => {
     setModalIsOpen(false);
   };
 
@@ -85,8 +102,8 @@ const App = () => {
         <ImageModal
           isOpen={modalIsOpen}
           onRequestClose={closeModal}
-          imageUrl={selectedImage.imageUrl}
-          alt={selectedImage.alt}
+          imageUrl={selectedImage.urls.full}
+          alt={selectedImage.alt_description}
         />
       )}
     </div>
